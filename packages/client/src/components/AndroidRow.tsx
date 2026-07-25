@@ -1,4 +1,5 @@
 import { ANDROID_CARD_DEFS, type MaskedBoardSlot } from "@erroroid/shared";
+import { useState } from "react";
 import { ANDROID_BACK_IMAGES, ANDROID_CARD_IMAGES } from "../assets/cardImages";
 
 interface Props {
@@ -9,8 +10,13 @@ interface Props {
   memory?: number;
 }
 
-/** 証拠がアリバイに迫るほど危険度を色で示す(強制オープンまでの余裕を一目で分かるように)。 */
-function evidenceBarColor(evidence: number, alibi: number): string {
+/** 残りアリバイ(HP)の割合。証拠が積み上がるほど減っていき、0で強制オープンの目安。 */
+function remainingAlibiRatio(evidence: number, alibi: number): number {
+  return alibi > 0 ? Math.max(0, 1 - evidence / alibi) : 0;
+}
+
+/** 残りアリバイが少ないほど危険度を色で示す(強制オープンまでの余裕を一目で分かるように)。 */
+function hpBarColor(evidence: number, alibi: number): string {
   const ratio = alibi > 0 ? evidence / alibi : 0;
   if (ratio >= 1) return "var(--danger)";
   if (ratio >= 0.5) return "var(--warning)";
@@ -18,6 +24,10 @@ function evidenceBarColor(evidence: number, alibi: number): string {
 }
 
 export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Props) {
+  const [confirmCharacter, setConfirmCharacter] = useState<MaskedBoardSlot["character"] | null>(null);
+  const confirmSlot = board.find((s) => s.character === confirmCharacter);
+  const confirmDef = confirmSlot ? ANDROID_CARD_DEFS[confirmSlot.character] : null;
+
   return (
     <div className="android-row">
       {board.map((slot) => {
@@ -49,7 +59,7 @@ export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Pro
             type="button"
             className={classNames}
             disabled={!canSelect}
-            onClick={() => canSelect && onSelectCharacter!(slot.character)}
+            onClick={() => canSelect && setConfirmCharacter(slot.character)}
           >
             {slot.isOpen && slot.identity ? (
               <img
@@ -64,12 +74,12 @@ export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Pro
                 className="android-card-image"
               />
             )}
-            <div className="evidence-bar-track">
+            <div className="hp-bar-track">
               <div
-                className="evidence-bar-fill"
+                className="hp-bar-fill"
                 style={{
-                  width: `${Math.min(100, (slot.evidence / def.alibi) * 100)}%`,
-                  backgroundColor: evidenceBarColor(slot.evidence, def.alibi),
+                  width: `${remainingAlibiRatio(slot.evidence, def.alibi) * 100}%`,
+                  backgroundColor: hpBarColor(slot.evidence, def.alibi),
                 }}
               />
             </div>
@@ -90,6 +100,47 @@ export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Pro
           </button>
         );
       })}
+
+      {confirmSlot && confirmDef && (
+        <div className="modal-overlay" onClick={() => setConfirmCharacter(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={ANDROID_CARD_IMAGES[confirmSlot.character]}
+              alt={confirmDef.displayName}
+              className="deduction-card-image-large"
+            />
+            <h3>{confirmDef.displayName}</h3>
+            <p className="card-detail-cost">コスト {confirmDef.cost}</p>
+            <div className="hp-bar-track">
+              <div
+                className="hp-bar-fill"
+                style={{
+                  width: `${remainingAlibiRatio(confirmSlot.evidence, confirmDef.alibi) * 100}%`,
+                  backgroundColor: hpBarColor(confirmSlot.evidence, confirmDef.alibi),
+                }}
+              />
+            </div>
+            <p className="card-detail-cost">
+              証拠 {confirmSlot.evidence} / アリバイ {confirmDef.alibi}
+            </p>
+            <p className="card-detail-effect">{confirmDef.effectText}</p>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setConfirmCharacter(null)}>
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectCharacter!(confirmSlot.character);
+                  setConfirmCharacter(null);
+                }}
+              >
+                使用する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
