@@ -37,3 +37,10 @@ services:
       # 上記の注意書きの通り、erroroid-server の実際のURLと異なる場合は書き換えて再デプロイする
       - key: VITE_SERVER_URL
         value: https://erroroid-server.onrender.com
+    # SPA(React Router相当の /room/:roomId 等のクライアント側ルーティング)を直接開くと
+    # 静的ホスティングは実ファイルを探して404を返してしまうため、どのパスもindex.htmlへ
+    # リライトして React 側にルーティングを任せる。
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
