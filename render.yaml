@@ -1,0 +1,39 @@
+# RenderのBlueprint定義。Renderダッシュボードで「New +」→「Blueprint」からこのリポジトリを指定するだけで
+# server(Node Web Service)とclient(Static Site)の2サービスをまとめてデプロイできる。
+#
+# npm workspacesモノレポのため、両サービスとも rootDir は指定せずリポジトリ直下から
+# `npm install` を実行する(サブディレクトリでinstallすると "@erroroid/shared": "*" の
+# ワークスペースリンクが解決できずビルドが壊れるため)。個別パッケージへの操作は
+# `npm run <script> --workspace=@erroroid/<name>` で行う。
+#
+# デプロイ後に確認・調整が必要な項目:
+# - client の VITE_SERVER_URL は「サービス名がそのままサブドメインになる」前提の予測URL。
+#   Render側で名前が衝突して別URLが割り当てられた場合は、実際のURLに書き換えて
+#   client サービスを再デプロイすること(Viteのビルド時埋め込み変数のため再ビルドが必要)。
+# - CORS(server の CLIENT_ORIGIN)は同じ理由で固定URLにせず既定の "*" のままにしている
+#   (このゲームは認証Cookie等を使わないため、ワイルドカードで実害はない想定)。
+#   気になる場合はデプロイ後に実際のclient URLを控えてserver側の環境変数として追加してよい。
+
+services:
+  - type: web
+    name: erroroid-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start --workspace=@erroroid/server
+    healthCheckPath: /ping
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+  - type: web
+    name: erroroid-client
+    runtime: static
+    buildCommand: npm install && npm run build --workspace=@erroroid/client
+    staticPublishPath: packages/client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # 上記の注意書きの通り、erroroid-server の実際のURLと異なる場合は書き換えて再デプロイする
+      - key: VITE_SERVER_URL
+        value: https://erroroid-server.onrender.com

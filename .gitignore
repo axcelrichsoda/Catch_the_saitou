@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+
+# 元素材フォルダ(APIキーのメモや旧デザイン案を含む個人作業用フォルダ、アプリの動作には不要)。
+# アプリで実際に使う画像は packages/client/src/assets/cards/ にコピー済みなのでこちらは追跡しない。
+カードデザイン/
+
+# 現物ルールブックの参考写真(docs/rules.mdに書き起こし済みでアプリの動作には不要)。
+ルール/
