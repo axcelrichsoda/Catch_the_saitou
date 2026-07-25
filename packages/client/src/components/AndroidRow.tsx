@@ -10,12 +10,12 @@ interface Props {
   memory?: number;
 }
 
-/** 残りアリバイ(HP)の割合。証拠が積み上がるほど減っていき、0で強制オープンの目安。 */
-function remainingAlibiRatio(evidence: number, alibi: number): number {
-  return alibi > 0 ? Math.max(0, 1 - evidence / alibi) : 0;
+/** 証拠/アリバイの割合。証拠が積み上がるほど増えていき、100%で強制オープン。 */
+function evidenceRatio(evidence: number, alibi: number): number {
+  return alibi > 0 ? Math.min(1, evidence / alibi) : 0;
 }
 
-/** 残りアリバイが少ないほど危険度を色で示す(強制オープンまでの余裕を一目で分かるように)。 */
+/** 証拠がアリバイに迫るほど危険度を色で示す(強制オープンまでの余裕を一目で分かるように)。 */
 function hpBarColor(evidence: number, alibi: number): string {
   const ratio = alibi > 0 ? evidence / alibi : 0;
   if (ratio >= 1) return "var(--danger)";
@@ -78,7 +78,7 @@ export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Pro
               <div
                 className="hp-bar-fill"
                 style={{
-                  width: `${remainingAlibiRatio(slot.evidence, def.alibi) * 100}%`,
+                  width: `${evidenceRatio(slot.evidence, def.alibi) * 100}%`,
                   backgroundColor: hpBarColor(slot.evidence, def.alibi),
                 }}
               />
@@ -115,7 +115,7 @@ export function AndroidRow({ board, onSelectCharacter, selectable, memory }: Pro
               <div
                 className="hp-bar-fill"
                 style={{
-                  width: `${remainingAlibiRatio(confirmSlot.evidence, confirmDef.alibi) * 100}%`,
+                  width: `${evidenceRatio(confirmSlot.evidence, confirmDef.alibi) * 100}%`,
                   backgroundColor: hpBarColor(confirmSlot.evidence, confirmDef.alibi),
                 }}
               />
