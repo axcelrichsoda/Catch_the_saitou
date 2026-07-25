@@ -45,6 +45,20 @@ button:disabled {
   text-align: center;
 }
 
+.landing-story {
+  text-align: left;
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.landing-win-condition {
+  font-weight: bold;
+  color: var(--accent);
+}
+
 .room-url-box {
   margin-top: 1rem;
   padding: 1rem;

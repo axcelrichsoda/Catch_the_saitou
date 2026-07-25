@@ -23,6 +23,20 @@ export function Landing() {
   return (
     <div className="landing">
       <h1>エラーロイド</h1>
+      <p className="landing-story">
+        近未来、世界では仕事用アンドロイドが普及していた。
+        <br />
+        N社でも、人材不足解消の為、新たに雇入れたが、ある日殺人事件が発生。
+        <br />
+        犯行は人間に逆らうアンドロイドで容疑者は7人まで絞られた。
+        <br />
+        貴方は現場の近くにいた為、疑われています。
+        <br />
+        犯人(対戦相手)も処分を逃れようと必死に罪をなすりつけようとするので
+        <br />
+        捕まる前に真犯人を探して、処分を逃れよう!
+      </p>
+      <p className="landing-win-condition">勝利条件: 相手の悪い人を先にオープンする</p>
       <p>2人用の正体隠匿推理カードゲーム。ルームを作成して、友人にURLを共有してください。</p>
       <button onClick={handleCreateRoom} disabled={creating}>
         {creating ? "作成中…" : "新しいルームを作成"}
