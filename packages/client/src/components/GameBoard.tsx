@@ -70,6 +70,13 @@ export function GameBoard() {
   return (
     <div className="game-layout">
       <aside className="rules-panel">
+        <h4>カードの見方</h4>
+        <ul>
+          <li>左上の数字: メモリー消費コスト</li>
+          <li>証拠: ダメージ数。最低値は0</li>
+          <li>アリバイ: いわゆる体力</li>
+          <li>証拠の数がアリバイ数を超えるとそのキャラは裏側になり使用不可となる</li>
+        </ul>
         <h4>ルール早見表</h4>
         <ul>
           <li>証拠がアリバイ以上になると自動でオープン(強制オープン)</li>
