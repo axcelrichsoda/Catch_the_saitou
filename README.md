@@ -61,11 +61,11 @@ cd packages/client && npm run build
 [`render.yaml`](./render.yaml) にBlueprint定義済み。Renderダッシュボードの「New +」→「Blueprint」でこのリポジトリを指定すると、以下2サービスがまとめて作成される。
 
 - `erroroid-server`(Node Web Service、無料枠): サーバー本体。ビルドコマンド・起動コマンドは[開発時の起動](#開発時の起動)節と同じ考え方(`tsx`でソース直接実行)
-- `erroroid-client`(Static Site): クライアントのビルド成果物(`packages/client/dist`)を配信
+- `capture-ofthe-saitoroid`(Static Site): クライアントのビルド成果物(`packages/client/dist`)を配信
 
 **デプロイ後に確認すること**
 
-- `erroroid-client`の環境変数`VITE_SERVER_URL`は「サービス名がそのままサブドメインになる」前提で`https://erroroid-server.onrender.com`を仮設定している。Render側で名前が衝突し実際のURLが異なった場合は、正しいURLに書き換えて`erroroid-client`を再デプロイすること(Viteのビルド時埋め込み変数のため再ビルドが必要)
+- `capture-ofthe-saitoroid`の環境変数`VITE_SERVER_URL`は「サービス名がそのままサブドメインになる」前提で`https://erroroid-server.onrender.com`を仮設定している。Render側で名前が衝突し実際のURLが異なった場合は、正しいURLに書き換えて`capture-ofthe-saitoroid`を再デプロイすること(Viteのビルド時埋め込み変数のため再ビルドが必要)
 - CORS(`erroroid-server`のCLIENT_ORIGIN環境変数)は同じ理由で固定URLにせず既定の`*`のままにしている(認証Cookie等を使わない設計のため実害はない想定)。厳格にしたい場合は実際のclient URLを控えてserver側に環境変数として追加する
 
 ## テスト

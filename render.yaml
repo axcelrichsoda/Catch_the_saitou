@@ -27,7 +27,7 @@ services:
         value: "20"
 
   - type: web
-    name: erroroid-client
+    name: capture-ofthe-saitoroid
     runtime: static
     buildCommand: npm install && npm run build --workspace=@erroroid/client
     staticPublishPath: packages/client/dist
