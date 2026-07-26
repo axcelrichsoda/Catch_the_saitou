@@ -22,6 +22,14 @@ export type GameAction =
 
 export type EffectLogEntry =
   | { readonly kind: "cardPlayed"; readonly owner: PlayerId; readonly cardId: DeductionCardId }
+  | {
+      /** 対象の証拠が実際に増減したことを示す(選択の結果を相手にも分かるようにするための通知用) */
+      readonly kind: "evidenceChanged";
+      readonly owner: PlayerId;
+      readonly character: CharacterId;
+      readonly before: number;
+      readonly after: number;
+    }
   | { readonly kind: "open"; readonly owner: PlayerId; readonly character: CharacterId; readonly identity: Identity }
   | {
       readonly kind: "truthAnswer";

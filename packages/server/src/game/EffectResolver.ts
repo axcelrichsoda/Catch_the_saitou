@@ -148,6 +148,9 @@ export async function resolveEffect(
   function applyEvidenceMutation(ref: TargetRef, newValue: number): boolean {
     const before = findSlot(s[ref.owner].board, ref.character).evidence;
     s = setPlayerBoard(s, ref.owner, setEvidence(s[ref.owner].board, ref.character, newValue));
+    if (newValue !== before) {
+      log.push({ kind: "evidenceChanged", owner: ref.owner, character: ref.character, before, after: newValue });
+    }
 
     const forceOpenOutcome = checkForceOpen(s, ref.owner, ref.character);
     s = forceOpenOutcome.state;

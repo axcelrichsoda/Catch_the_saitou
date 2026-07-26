@@ -7,6 +7,13 @@ export function describeLogEntry(entry: EffectLogEntry): string {
     const name = DEDUCTION_CARD_DEFS[entry.cardId].displayName;
     return `${owner}が「${name}」を使用`;
   }
+  if (entry.kind === "evidenceChanged") {
+    const owner = entry.owner === "player1" ? "プレイヤー1" : "プレイヤー2";
+    const name = ANDROID_CARD_DEFS[entry.character].displayName;
+    const diff = entry.after - entry.before;
+    const sign = diff > 0 ? "+" : "";
+    return `${owner}の${name}の証拠が${entry.before}→${entry.after}(${sign}${diff})`;
+  }
   if (entry.kind === "open") {
     const name = ANDROID_CARD_DEFS[entry.character].displayName;
     const owner = entry.owner === "player1" ? "プレイヤー1" : "プレイヤー2";
