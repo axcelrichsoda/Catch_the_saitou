@@ -6,6 +6,7 @@ import {
   type ChooseTargetsRequestPayload,
   type DeductionCardId,
   type EffectLogEntry,
+  type EffectSource,
   type JoinResponse,
   type LobbyStatusPayload,
   type Seat,
@@ -72,10 +73,16 @@ class SocketEffectChooser implements EffectChooser {
     chooser: Seat & ("player1" | "player2");
     candidates: readonly TargetRef[];
     count: number;
+    source?: EffectSource;
   }): Promise<readonly TargetRef[]> {
     const seat = args.chooser;
     const requestId = randomUUID();
-    const payload: ChooseTargetsRequestPayload = { requestId, candidates: args.candidates, count: args.count };
+    const payload: ChooseTargetsRequestPayload = {
+      requestId,
+      candidates: args.candidates,
+      count: args.count,
+      source: args.source,
+    };
     return new Promise((resolve, reject) => {
       this.conns.pendingRequests.set(requestId, {
         forSeat: seat,

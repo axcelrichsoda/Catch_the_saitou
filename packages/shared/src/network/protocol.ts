@@ -18,6 +18,17 @@ export type GameAction =
   | { readonly type: "useReveal"; readonly player: PlayerId }
   | { readonly type: "endTurn"; readonly player: PlayerId };
 
+/**
+ * 対象選択(chooseTargetsRequest)が「どのカードの効果によるものか」を表す。
+ * 選択を求められる側(特にchooser:'opponent'で相手に選ばせるカードの相手側)が、
+ * 何も文脈が分からないまま「対象を選択してください」だけ見せられることのないよう、
+ * カードの絵柄・効果文を先に提示するために使う。
+ */
+export type EffectSource =
+  | { readonly kind: "deductionCard"; readonly cardId: DeductionCardId }
+  | { readonly kind: "androidCard"; readonly character: CharacterId }
+  | { readonly kind: "revealCard"; readonly revealCardId: RevealCardId };
+
 // --- 効果解決ログ(EffectResolverの出力、クライアントへも送られる) ---
 
 export type EffectLogEntry =
@@ -119,6 +130,7 @@ export interface ChooseTargetsRequestPayload {
   readonly requestId: string;
   readonly candidates: readonly TargetRef[];
   readonly count: number;
+  readonly source?: EffectSource;
 }
 
 export interface ChooseTargetsResponsePayload {

@@ -7,6 +7,7 @@ import type {
   DeductionCardId,
   EffectCondition,
   EffectLogEntry,
+  EffectSource,
   EffectStep,
   PlayerId,
   TargetFilter,
@@ -35,6 +36,7 @@ export interface EffectChooser {
     chooser: PlayerId;
     candidates: readonly TargetRef[];
     count: number;
+    source?: EffectSource;
   }): readonly TargetRef[] | Promise<readonly TargetRef[]>;
 
   chooseDiscardCard(args: {
@@ -56,6 +58,8 @@ export interface EffectResolutionResult {
 
 export interface ResolveEffectOptions {
   readonly rng?: () => number;
+  /** 対象選択を人間に問い合わせる際、「どのカードの効果か」を伝えるための情報。 */
+  readonly source?: EffectSource;
 }
 
 function resolveBoardOwner(actingPlayer: PlayerId, board: BoardSide): PlayerId {
@@ -201,6 +205,7 @@ export async function resolveEffect(
             chooser: chooserPlayer,
             candidates,
             count: step.count,
+            source: options.source,
           });
           validateChosen(chosen, candidates, step.count);
           bindings[step.bindAs] = chosen;
@@ -218,6 +223,7 @@ export async function resolveEffect(
             chooser: chooserPlayer,
             candidates: pool,
             count: step.count,
+            source: options.source,
           });
           validateChosen(chosen, pool, step.count);
           bindings[step.bindAs] = chosen;

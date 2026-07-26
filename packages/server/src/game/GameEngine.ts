@@ -9,6 +9,7 @@ import {
   type CardEffectScript,
   type CharacterId,
   type DeductionCardId,
+  type EffectSource,
   type PlayerId,
 } from "@erroroid/shared";
 import { validateAction, type GameAction } from "./ActionValidator.js";
@@ -128,6 +129,7 @@ export async function dispatch(
   const player = action.player;
   let s = state;
   let script: CardEffectScript;
+  let source: EffectSource;
   let preLog: EffectLogEntry[] = [];
 
   if (action.type === "playDeductionCard") {
@@ -141,6 +143,7 @@ export async function dispatch(
       [player]: { ...s[player], hand, tokens: consume(s[player].tokens, def.cost) },
     };
     script = def.effect;
+    source = { kind: "deductionCard", cardId: action.cardId };
     // 相手視点では何のカードが使われたか分からないため、効果ログの先頭に明示しておく。
     preLog = [{ kind: "cardPlayed", owner: player, cardId: action.cardId }];
   } else if (action.type === "openAndroid") {
@@ -162,11 +165,13 @@ export async function dispatch(
       };
     }
     script = ANDROID_CARD_EFFECTS[action.character].effect;
+    source = { kind: "androidCard", character: action.character };
   } else {
     // useReveal
     const openedOwnCount = s[player].board.filter((slot) => slot.isOpen).length;
     const revealDef = REVEAL_CARD_DEFS[s[player].revealCardId];
     const cost = computeRevealCost(revealDef, openedOwnCount);
+    source = { kind: "revealCard", revealCardId: s[player].revealCardId };
     s = {
       ...s,
       [player]: { ...s[player], tokens: consume(s[player].tokens, cost), revealCardAvailable: false },
@@ -174,7 +179,7 @@ export async function dispatch(
     script = revealDef.effect;
   }
 
-  const effectResult = await resolveEffect(s, script, player, chooser);
+  const effectResult = await resolveEffect(s, script, player, chooser, { source });
   s = effectResult.state;
   const log = [...preLog, ...effectResult.log];
 
