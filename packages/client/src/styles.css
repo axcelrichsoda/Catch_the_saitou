@@ -453,6 +453,10 @@ button:disabled {
   padding: 1.5rem;
   max-width: 640px;
   width: 90%;
+  /* オリバー(マジシャン)の連鎖トリガーなど、通知の項目数が多いと画面より縦に長くなることがある。
+     内部スクロールにしないとOKボタンごと画面外に押し出され、操作不能になってしまう。 */
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .modal-actions {
