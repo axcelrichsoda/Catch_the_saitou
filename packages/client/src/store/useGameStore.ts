@@ -147,7 +147,19 @@ function ingestLog(log: readonly EffectLogEntry[] | undefined, notify: boolean):
 }
 
 // ソケットイベント配線(モジュール読み込み時に一度だけ登録する)
-socket.on("connect", () => useGameStore.setState({ connected: true }));
+// "connect" は初回接続だけでなく、通信の瞬断やRender無料枠のスリープ復帰後の
+// 再接続時にも毎回発火する。再接続後のソケットはサーバー側で座席未登録の状態から
+// 始まるため、既に入室済み(roomTokenあり)なら保存済みのsessionTokenで再joinし、
+// 座席とアクション待ち状態(対象選択など)を復元しないと、次の操作が
+// "not joined" エラーになってしまう。
+socket.on("connect", () => {
+  useGameStore.setState({ connected: true });
+  const { roomToken } = useGameStore.getState();
+  if (roomToken) {
+    const sessionToken = sessionStorage.getItem(sessionKey(roomToken)) ?? undefined;
+    socket.emit("join", { roomToken, sessionToken });
+  }
+});
 // 切断時、応答が二度と届かないactionでUIが固まったままにならないようガードも解除する。
 socket.on("disconnect", () => useGameStore.setState({ connected: false, actionInFlight: false }));
 
