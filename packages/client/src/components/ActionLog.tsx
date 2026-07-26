@@ -1,7 +1,12 @@
-import { ANDROID_CARD_DEFS, type EffectLogEntry } from "@erroroid/shared";
+import { ANDROID_CARD_DEFS, DEDUCTION_CARD_DEFS, type EffectLogEntry } from "@erroroid/shared";
 import { useGameStore } from "../store/useGameStore";
 
-function describe(entry: EffectLogEntry): string {
+export function describeLogEntry(entry: EffectLogEntry): string {
+  if (entry.kind === "cardPlayed") {
+    const owner = entry.owner === "player1" ? "プレイヤー1" : "プレイヤー2";
+    const name = DEDUCTION_CARD_DEFS[entry.cardId].displayName;
+    return `${owner}が「${name}」を使用`;
+  }
   if (entry.kind === "open") {
     const name = ANDROID_CARD_DEFS[entry.character].displayName;
     const owner = entry.owner === "player1" ? "プレイヤー1" : "プレイヤー2";
@@ -31,7 +36,7 @@ export function ActionLog() {
           .slice(-20)
           .reverse()
           .map((entry, i) => (
-            <li key={i}>{describe(entry)}</li>
+            <li key={i}>{describeLogEntry(entry)}</li>
           ))}
       </ul>
     </div>

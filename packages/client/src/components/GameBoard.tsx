@@ -1,10 +1,12 @@
-import { ANDROID_CARD_DEFS, type MaskedBoardSlot } from "@erroroid/shared";
+import { ANDROID_CARD_DEFS, DEDUCTION_CARD_DEFS, DEDUCTION_DECK_SIZE, type MaskedBoardSlot } from "@erroroid/shared";
 import { DEDUCTION_CARD_BACK_IMAGE } from "../assets/cardImages";
 import { useGameStore } from "../store/useGameStore";
 import { ActionLog } from "./ActionLog";
 import { AndroidRow } from "./AndroidRow";
+import { DiscardPileViewer } from "./DiscardPileViewer";
 import { DiscardSelectModal } from "./DiscardSelectModal";
 import { Hand } from "./Hand";
+import { NoticeModal } from "./NoticeModal";
 import { RevealArea } from "./RevealArea";
 import { TargetSelectModal } from "./TargetSelectModal";
 import { TokenTray } from "./TokenTray";
@@ -31,8 +33,7 @@ export function GameBoard() {
   const useReveal = useGameStore((s) => s.useReveal);
   const endTurn = useGameStore((s) => s.endTurn);
   const lastActionError = useGameStore((s) => s.lastActionError);
-  const oliverNotice = useGameStore((s) => s.oliverNotice);
-  const dismissOliverNotice = useGameStore((s) => s.dismissOliverNotice);
+  const pendingNotices = useGameStore((s) => s.pendingNotices);
   const actionInFlight = useGameStore((s) => s.actionInFlight);
 
   if (!view) {
@@ -41,6 +42,9 @@ export function GameBoard() {
 
   const isPlayer = perspective === "player1" || perspective === "player2";
   const myTurn = isPlayer && view.turn === perspective && view.phase === "thinking";
+  // 未確認の通知(相手の行動内容・自分の番になった通知)がある間は行動をブロックし、
+  // OKを押して確認してから次の行動に進んでもらう。
+  const canAct = myTurn && pendingNotices.length === 0 && !actionInFlight;
   const me = perspective === "player1" ? view.player1 : perspective === "player2" ? view.player2 : undefined;
 
   const winnerLabel =
@@ -75,6 +79,15 @@ export function GameBoard() {
           <li>{ANDROID_CARD_DEFS.oliver.displayName}だけ例外: 相手ターン中に証拠が丁度4に到達すると自動でオープンし、相手の全アンドロイド証拠+1</li>
           <li>手札のカードはクリックで詳細確認→「使用する」で確定</li>
         </ul>
+        <h4>推理カード内訳(山札40枚共通)</h4>
+        <ul>
+          {Object.values(DEDUCTION_CARD_DEFS).map((def) => (
+            <li key={def.id}>
+              {def.displayName} × {def.count}
+            </li>
+          ))}
+          <li>合計 {DEDUCTION_DECK_SIZE} 枚</li>
+        </ul>
       </aside>
 
       <div className="game-board">
@@ -89,9 +102,9 @@ export function GameBoard() {
           {myTurn && <span className="my-turn-badge">あなたの番です</span>}
         </div>
 
-        <p className="shared-deck-info">
-          山札 {view.deck.drawCount} 枚 ・ 廃棄場 {view.deck.discardPile.length} 枚(共有)
-        </p>
+        <div className="shared-deck-info">
+          山札 {view.deck.drawCount} 枚 ・ <DiscardPileViewer discardPile={view.deck.discardPile} />
+        </div>
 
         {lastActionError && <div className="notice-box error">{lastActionError}</div>}
 
@@ -104,11 +117,7 @@ export function GameBoard() {
                 board={data.board}
                 onSelectCharacter={isSelf ? (character) => openAndroid(character) : undefined}
                 selectable={(slot: MaskedBoardSlot) =>
-                  isSelf &&
-                  myTurn &&
-                  !actionInFlight &&
-                  !slot.isOpen &&
-                  (me?.tokens.memory ?? 0) >= ANDROID_CARD_DEFS[slot.character].cost
+                  isSelf && canAct && !slot.isOpen && (me?.tokens.memory ?? 0) >= ANDROID_CARD_DEFS[slot.character].cost
                 }
                 memory={isSelf ? data.tokens.memory : undefined}
               />
@@ -119,14 +128,14 @@ export function GameBoard() {
                   available={data.revealCardAvailable}
                   openedCount={data.board.filter((s) => s.isOpen).length}
                   isSelf={isSelf}
-                  myTurn={myTurn}
+                  myTurn={canAct}
                   memory={data.tokens.memory}
                   onUse={isSelf ? useReveal : undefined}
                   disabled={actionInFlight}
                 />
               </div>
               {isSelf && me && (
-                <Hand hand={data.hand ?? []} memory={me.tokens.memory} myTurn={myTurn} disabled={actionInFlight} />
+                <Hand hand={data.hand ?? []} memory={me.tokens.memory} myTurn={canAct} disabled={actionInFlight} />
               )}
               {!isSelf && (
                 <div className="hand-back-row" aria-label={`手札 ${data.handCount} 枚`}>
@@ -142,7 +151,7 @@ export function GameBoard() {
 
         {isPlayer && (
           <div className="action-bar">
-            <button type="button" disabled={!myTurn || actionInFlight} onClick={endTurn}>
+            <button type="button" disabled={!canAct} onClick={endTurn}>
               ターン終了
             </button>
           </div>
@@ -153,21 +162,7 @@ export function GameBoard() {
         <DiscardSelectModal />
       </div>
 
-      {oliverNotice && (
-        <div className="modal-overlay">
-          <div className="modal oliver-notice-modal">
-            <h3>{ANDROID_CARD_DEFS.oliver.displayName}の能力が発動しました</h3>
-            <p>
-              {oliverNotice === "player1" ? "プレイヤー1" : "プレイヤー2"}
-              の{ANDROID_CARD_DEFS.oliver.displayName}の証拠が相手ターン中に丁度4まで到達し、自動的にオープンしました。
-              その効果で{oliverNotice === "player1" ? "プレイヤー2" : "プレイヤー1"}の全アンドロイドの証拠が+1されています。
-            </p>
-            <button type="button" onClick={dismissOliverNotice}>
-              確認しました
-            </button>
-          </div>
-        </div>
-      )}
+      <NoticeModal />
     </div>
   );
 }

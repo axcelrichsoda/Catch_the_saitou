@@ -18,6 +18,11 @@ import { socket } from "../socket";
 
 export type LobbyPhase = "waitingForPlayers" | "waitingForErroroidChoices" | "inGame";
 
+/** 対応するまで次の行動をブロックする通知。相手の操作結果(カード使用等)か、自分の番になったこと、のどちらか。 */
+export type Notice =
+  | { readonly kind: "log"; readonly entries: readonly EffectLogEntry[] }
+  | { readonly kind: "turnStart" };
+
 interface GameStore {
   connected: boolean;
   roomToken: string | null;
@@ -32,8 +37,8 @@ interface GameStore {
   joinNotice: string | null;
   lastActionError: string | null;
   actionLog: EffectLogEntry[];
-  /** オリバーの常在トリガーが発動した直後、確認するまで表示し続ける通知(所有者のPlayerId)。 */
-  oliverNotice: PlayerId | null;
+  /** 未確認の通知キュー。先頭(pendingNotices[0])だけをモーダル表示し、確認済みから順に消化する。 */
+  pendingNotices: Notice[];
   /** action送信からactionResult受信までの間true。多重送信を防ぐガード。 */
   actionInFlight: boolean;
 
@@ -45,7 +50,7 @@ interface GameStore {
   endTurn: () => void;
   respondChooseTargets: (chosen: TargetRef[]) => void;
   respondChooseDiscard: (picked: DeductionCardId) => void;
-  dismissOliverNotice: () => void;
+  dismissNotice: () => void;
 }
 
 function sessionKey(roomToken: string): string {
@@ -70,7 +75,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   joinNotice: null,
   lastActionError: null,
   actionLog: [],
-  oliverNotice: null,
+  pendingNotices: [],
   actionInFlight: false,
 
   joinRoom: (roomToken) => {
@@ -125,18 +130,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ pendingDiscardRequest: null });
   },
 
-  dismissOliverNotice: () => set({ oliverNotice: null }),
+  dismissNotice: () => set((state) => ({ pendingNotices: state.pendingNotices.slice(1) })),
 }));
 
-/** actionResult/logEntries共通: ログを積み増し、オリバー常在トリガーがあれば通知を立てる。 */
-function ingestLog(log: readonly EffectLogEntry[] | undefined): void {
+/**
+ * actionResult/logEntries共通: 履歴ログ(actionLog)には常に積み増す。
+ * 通知モーダル(pendingNotices)は自分の操作結果には出さない(自分は選択画面等で既に経緯を見ているため)。
+ * 相手の操作(logEntries経由)の時だけ通知キューに積み、OKを押すまで次の行動をブロックする。
+ */
+function ingestLog(log: readonly EffectLogEntry[] | undefined, notify: boolean): void {
   if (!log || log.length === 0) return;
-  const oliverEntry = log.find(
-    (entry): entry is Extract<EffectLogEntry, { kind: "oliverTriggered" }> => entry.kind === "oliverTriggered",
-  );
   useGameStore.setState((state) => ({
     actionLog: [...state.actionLog, ...log],
-    oliverNotice: oliverEntry ? oliverEntry.owner : state.oliverNotice,
+    pendingNotices: notify ? [...state.pendingNotices, { kind: "log", entries: log }] : state.pendingNotices,
   }));
 }
 
@@ -175,7 +181,19 @@ socket.on("lobbyStatus", (payload: LobbyStatusPayload) => {
 });
 
 socket.on("view", (payload: GameView) => {
-  useGameStore.setState({ view: payload, lobbyPhase: "inGame" });
+  const { view: previousView, perspective } = useGameStore.getState();
+  // 相手がターンを終えて自分の手番が来た瞬間だけ、確認するまでブロックする通知を立てる
+  // (最初にゲーム開始直後に見るビューは対象外にするため、直前のviewが存在する場合のみ判定する)。
+  const becameMyTurn =
+    previousView !== null &&
+    previousView.turn !== payload.turn &&
+    (perspective === "player1" || perspective === "player2") &&
+    payload.turn === perspective;
+  useGameStore.setState((state) => ({
+    view: payload,
+    lobbyPhase: "inGame",
+    pendingNotices: becameMyTurn ? [...state.pendingNotices, { kind: "turnStart" }] : state.pendingNotices,
+  }));
 });
 
 socket.on("actionResult", (payload: ActionResultPayload) => {
@@ -183,11 +201,11 @@ socket.on("actionResult", (payload: ActionResultPayload) => {
     lastActionError: payload.ok ? null : (payload.error ?? "unknown error"),
     actionInFlight: false,
   });
-  ingestLog(payload.log);
+  ingestLog(payload.log, false);
 });
 
 socket.on("logEntries", (log: EffectLogEntry[]) => {
-  ingestLog(log);
+  ingestLog(log, true);
 });
 
 socket.on("submitErroroidChoiceResult", (payload: SubmitErroroidChoiceResult) => {

@@ -21,6 +21,7 @@ export type GameAction =
 // --- 効果解決ログ(EffectResolverの出力、クライアントへも送られる) ---
 
 export type EffectLogEntry =
+  | { readonly kind: "cardPlayed"; readonly owner: PlayerId; readonly cardId: DeductionCardId }
   | { readonly kind: "open"; readonly owner: PlayerId; readonly character: CharacterId; readonly identity: Identity }
   | {
       readonly kind: "truthAnswer";

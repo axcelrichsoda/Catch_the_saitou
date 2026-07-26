@@ -462,13 +462,40 @@ button:disabled {
   margin-top: 1rem;
 }
 
-.oliver-notice-modal {
+.notice-modal {
   border: 2px solid var(--accent);
   text-align: center;
 }
 
-.oliver-notice-modal p {
+.notice-modal p {
   line-height: 1.6;
+}
+
+.notice-entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notice-entry + .notice-entry {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--panel-2);
+}
+
+.notice-entry .deduction-card-image-large {
+  max-width: 200px;
+}
+
+.discard-pile-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .target-candidates {

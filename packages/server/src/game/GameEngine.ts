@@ -128,6 +128,7 @@ export async function dispatch(
   const player = action.player;
   let s = state;
   let script: CardEffectScript;
+  let preLog: EffectLogEntry[] = [];
 
   if (action.type === "playDeductionCard") {
     const def = DEDUCTION_CARD_DEFS[action.cardId];
@@ -140,6 +141,8 @@ export async function dispatch(
       [player]: { ...s[player], hand, tokens: consume(s[player].tokens, def.cost) },
     };
     script = def.effect;
+    // 相手視点では何のカードが使われたか分からないため、効果ログの先頭に明示しておく。
+    preLog = [{ kind: "cardPlayed", owner: player, cardId: action.cardId }];
   } else if (action.type === "openAndroid") {
     const def = ANDROID_CARD_DEFS[action.character];
     const slot = findSlot(s[player].board, action.character);
@@ -173,13 +176,14 @@ export async function dispatch(
 
   const effectResult = await resolveEffect(s, script, player, chooser);
   s = effectResult.state;
+  const log = [...preLog, ...effectResult.log];
 
   if (effectResult.gameOver) {
     return {
       state: { ...s, phase: "gameOver", winner: otherPlayer(effectResult.gameOver.loser) },
-      log: effectResult.log,
+      log,
     };
   }
 
-  return { state: s, log: effectResult.log };
+  return { state: s, log };
 }
